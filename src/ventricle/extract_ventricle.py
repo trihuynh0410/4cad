@@ -47,7 +47,7 @@ def segment_and_extract_middle_slice(mri_array, aseg_array):
 	original_middle_slice = mri_array[:, middle_slice_index, :]
 	return extracted_middle_slice, original_middle_slice
 
-def save_as_jpg(image, output_path):
+def save_as_jpg(output_path, image):
 	plt.figure(figsize=(6, 6))
 	plt.imshow(image, cmap='gray')
 	plt.axis('off')
@@ -59,17 +59,12 @@ def process_subjects_in_folder(folder_name):
 	subjects_dir = os.listdir(folder_name)
 	base_folder_name = os.path.basename(folder_name)
 
-	if not os.path.exists(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_ori/{base_folder_name}'):
-		os.makedirs(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_ori/{base_folder_name}')
-	
-	if not os.path.exists(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_segment/{base_folder_name}'):
-		os.makedirs(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_segment/{base_folder_name}')
-			
-	if not os.path.exists(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_shear/{base_folder_name}'):
-		os.makedirs(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_shear/{base_folder_name}')
-			
-	if not os.path.exists(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_shearseg/{base_folder_name}'):
-		os.makedirs(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_shearseg/{base_folder_name}')
+	data_list = [ori, segment, ori_shear, seg_shear]
+	folder_list = ['ventricles_ori', 'ventricles_segment', 'ventricles_shear', 'ventricles_shearseg']
+	for data in data_list:
+		if not os.path.exists(f'/4CAD/data/{data}/{base_folder_name}'):
+			os.makedirs(f'/4CAD/data/{data}/{base_folder_name}')
+
 
 	for subject in subjects_dir:
 		if subject == 'fsaverage':
@@ -85,21 +80,16 @@ def process_subjects_in_folder(folder_name):
 		ori_shear = shear(ori)
 		seg_shear = shear(segment)
 		# Save as jpg
-		output_path_npy = os.path.join(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_ori/{base_folder_name}', f"{subject}ventricle.npy")
-		np.save(output_path_npy, ori)
+		for data, folder in zip(data_list, folder_list):
+			# Save as .npy
+			output_path = os.path.join(f'/4CAD/data/{folder}/{base_folder_name}', f"{subject}ventricle.npy")
+			np.save(output_path, data)
 
-		output_path_npy = os.path.join(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_segment/{base_folder_name}', f"{subject}ventricle.npy")
-		np.save(output_path_npy, segment)
-
-		output_path_npy = os.path.join(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_shear/{base_folder_name}', f"{subject}ventricle.npy")
-		np.save(output_path_npy, ori_shear)
-
-		output_path_npy = os.path.join(f'/mnt/data_lab513/tramy/4CAD/data/ventricles_shearseg/{base_folder_name}', f"{subject}ventricle.npy")
-		np.save(output_path_npy, seg_shear)
-
-
+			# Save as .jpg
+			output_path = os.path.join(f'/4CAD/img/{folder}/{base_folder_name}', f"{subject}ventricle.jpg")
+			save_as_jpg(output_path, data)
 if __name__ == "__main__":
 
 	for folder in  ["CN", "MCI", "Mild" 'Mod']:
-		process_subjects_in_folder(f'/mnt/data_lab513/tramy/4CAD/data/ADNI_out_mgz/{folder}')
+		process_subjects_in_folder(f'/4CAD/data/ADNI_out_mgz/{folder}')
 
