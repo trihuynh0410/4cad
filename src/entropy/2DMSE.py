@@ -4,7 +4,7 @@ import re
 import numpy as np
 import pandas as pd
 import cupy as cp
-from ultils import *
+from entropy import *
 
 LABELS = {
 	'CN': 0,
@@ -12,47 +12,33 @@ LABELS = {
 	'Mild': 2,
 	'Mod': 3
 }
-from memory_profiler import memory_usage
-import time
+
 
 def calculate_entropy_and_profile(func, *args, **kwargs):
-    mem_before = memory_usage()[0]
-    start_time = time.time()
-    
-    result = func(*args, **kwargs)
-    
-    mem_after = memory_usage()[0]
-    end_time = time.time()
-    
-    #print(f"{func.__name__} done. Memory used: {mem_after - mem_before} MiB, Time taken: {end_time - start_time} seconds.")
-    return result
+
+	result = func(*args, **kwargs)
+	return result
 
 def calculate_entropies(data, window):
     entropies = {}
     
-    #print("Calculating SampEn...")
     entropies['SampEn'], _ = calculate_entropy_and_profile(SampEn2D, data, m=window, tau=1, r=0.5, Lock=False)
-    
-    #print("Calculating FuzzEn...")
+
     entropies['FuzzEn'] = calculate_entropy_and_profile(FuzzEn2D, data, m=window, tau=1, r=0.5, Logx=cp.exp(1), Lock=False)
     
-    #print("Calculating DispEn...")
     entropies['DispEn'], _ = calculate_entropy_and_profile(DispEn2D, data, m=window, tau=1, c=2, Typex='NCDF', Logx=cp.exp(1), Norm=False, Lock=False)
     
-    #print("Calculating DistEn...")
     entropies['DistEn'] = calculate_entropy_and_profile(DistEn2D, data, m=window, tau=1, Logx=cp.exp(1), Norm=int(0), Lock=False)
     
-    #print("Calculating PermEn...")
     entropies['PermEn'] = calculate_entropy_and_profile(PermEn2D, data, m=window, tau=1, Logx=cp.exp(1), Norm=False, Lock=False)
     
-    #print("Calculating EspEn...")
     entropies['EspEn'] = calculate_entropy_and_profile(EspEn2D, data, m=window, tau=1, Logx=cp.exp(1), Lock=False)
     
     return entropies
 
 def process_directory(feature_dir, scales, windows):
 	feature_name = os.path.basename(feature_dir)
-	output_filename = f"EntropyResults_{feature_name}.csv"
+	output_filename = f"data/entropy/Entropy_{feature_name}.csv"
 
 	# Load existing results if they exist
 	if os.path.exists(output_filename):
@@ -63,11 +49,7 @@ def process_directory(feature_dir, scales, windows):
 	for label, label_value in LABELS.items():
 		label_dir = os.path.join(feature_dir, label)
 		for subject_file in os.listdir(label_dir):
-			match = re.search(r'ADNI_(\d{3}_S_\d{4})_MR_', subject_file)
-			if match:
-				subject_name = match.group(1)
-			else:
-				continue
+			subject_name = os.path.splitext(subject_file)[0].rsplit('_', 1)[0]
 
 			if 'subject' in results_df.columns and subject_name in results_df['subject'].values:
 				print(f'Subject {subject_name} already processed. Skipping...')
@@ -102,7 +84,7 @@ if __name__ == "__main__":
 		sys.exit(1)
 
 	feature_directory = sys.argv[1]
-	scales = [2, 3, 4]
-	windows = [1, 2, 3, 4]
+	scales = [3, 4]
+	windows = [4]
 	process_directory(feature_directory, scales, windows)
 

@@ -1,4 +1,8 @@
 import cupy as cp
+from scipy.special import ndtr
+from scipy.cluster.vq import kmeans2
+
+
 def coarse_grain(data, scale):
     x_len, y_len = data.shape
     x_len_coarse = x_len // scale
@@ -13,9 +17,7 @@ def coarse_grain(data, scale):
             block_avg = cp.mean(block)
             data_coarse[i, j] = block_avg
     return data_coarse
-import cupy as cp
-from scipy.special import ndtr
-from scipy.cluster.vq import kmeans2
+
 
 def cupy_unique_axis0(array):
     sortarr = array[cp.lexsort(array.T[::-1])]
@@ -94,7 +96,6 @@ def DispEn2D(Mat, m=None, tau=1, c=3, Typex='NCDF', Logx=cp.exp(1), Norm=False, 
     del Mat, Zi, X, T, Counter, Ppi
 
     return Disp2D, RDE
-import cupy as cp
 
 def DistEn2D(Mat, m=None, tau=1, Bins='Sturges', Logx=2, Norm=2, Lock=True):
     Mat = cp.squeeze(Mat)
@@ -160,7 +161,6 @@ def DistEn2D(Mat, m=None, tau=1, Bins='Sturges', Logx=2, Norm=2, Lock=True):
     del m, tau, Bins, Logx, Norm, Lock
     del X, p, Ny, Y, Bx, By, Ppi
     return Dist2D
-import cupy as cp
 
 def EspEn2D(Mat, m=None, tau=1, r=20, ps=0.7, Logx=cp.exp(1), Lock=True):
     Mat = cp.squeeze(Mat)
@@ -198,7 +198,6 @@ def EspEn2D(Mat, m=None, tau=1, r=20, ps=0.7, Logx=cp.exp(1), Lock=True):
     del Mat, NL, NW, m, tau, r, ps, Logx, Lock
     del X, p, Ny, Cij, Temp, Dm
     return Esp2D
-import cupy as cp
     
 def default(x,r):   
     assert isinstance(r,tuple), 'When Fx = "Default", r must be a two-element tuple.'
@@ -255,7 +254,6 @@ def FuzzEn2D(Mat, m=None, tau=1, r=None, Fx='default', Logx=cp.exp(1), Lock=True
     del m, tau, r, Fx, Logx, Lock
     del X1, X2, p, Ny, Y1, Y2
     return Fuzz2D
-import cupy as cp
 
 def SampEn2D(Mat, m=None, tau=1, r=None, Logx=cp.exp(1), Lock=True):           
     Mat = cp.squeeze(Mat)
@@ -299,7 +297,6 @@ def SampEn2D(Mat, m=None, tau=1, r=None, Logx=cp.exp(1), Lock=True):
     del m, tau, r, Logx, Lock
     del X, p, Ny, Y1, Y2
     return SE2D, (Phi1,Phi2)
-import cupy as cp
 
 def PermEn2D(Mat, m=None, tau=1, Norm=True, Logx=cp.exp(1), Lock=True):            
     Mat = cp.squeeze(Mat)

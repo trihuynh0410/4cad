@@ -2,13 +2,8 @@ import os
 import numpy as np
 import nibabel as nib
 import matplotlib.pyplot as plt
-import numpy as np
 import pyshearlab
-from scipy.ndimage import rotate
-import sys
-from matplotlib import pyplot as plt
-import warnings
-warnings.filterwarnings("ignore")
+
 
 def shear(image_data):
 	shearletSystem_norm = pyshearlab.SLgetShearletSystem2D(1,image_data.shape[0],image_data.shape[1],3)
@@ -16,8 +11,7 @@ def shear(image_data):
 	result = np.sum(np.abs(coeffs), axis=2)
 	return result
 
-def get_largest_area_slice(image):
-
+def largest_slice(image):
 	non_empty_slices = np.any(image, axis=(0, 2))
 	indices = np.where(non_empty_slices)[0]
 	
@@ -36,16 +30,32 @@ def get_largest_area_slice(image):
 			
 	return largest_area_slice
 
+def segment(ori, aseg, a1, a2):
+	left = np.where(aseg == a1, 1, 0)
+	right = np.where(aseg == a2, 1, 0)
+	mask = left + right
+	segment = mask * ori
+	return segment, mask
 
-def segment_and_extract_middle_slice(mri_array, aseg_array):
-	left_ventricle_mask = np.where(aseg_array == 4, 1, 0)
-	right_ventricle_mask = np.where(aseg_array == 43, 1, 0)
-	ventricles_mask = left_ventricle_mask + right_ventricle_mask
-	extracted_ventricles = ventricles_mask * mri_array
-	middle_slice_index = get_largest_area_slice(ventricles_mask)
-	extracted_middle_slice = extracted_ventricles[:, middle_slice_index, :]
-	original_middle_slice = mri_array[:, middle_slice_index, :]
-	return extracted_middle_slice, original_middle_slice
+def process_hippo(ori, aseg):
+	region, _ = segment(ori, aseg, 17, 53)
+	amygdala, _ = segment(ori, aseg, 18, 54)
+
+	non_empty_slices = np.any(amygdala, axis=(0, 1))
+	indices = np.where(non_empty_slices)[0]
+	i = indices[0] - 1
+	ori_slice = ori[:,:,i]
+	hippo_slice = region[:,:,i]
+	return ori_slice, hippo_slice
+
+
+def process_ventricle(ori, aseg):
+	region, mask = segment(ori, aseg, 4, 43)
+	i = largest_slice(mask)
+	ven_slice = region[:, i, :]
+	ori_slice = ori[:, i, :]
+	return ori_slice, ven_slice
+
 
 def save_as_jpg(output_path, image):
 	plt.figure(figsize=(6, 6))
@@ -54,16 +64,19 @@ def save_as_jpg(output_path, image):
 	plt.tight_layout()
 	plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
 	plt.close()
+	
 
-def process_subjects_in_folder(folder_name):
+def process_subjects_in_folder(folder_name, region):
 	subjects_dir = os.listdir(folder_name)
 	base_folder_name = os.path.basename(folder_name)
 
-	data_list = [ori, segment, ori_shear, seg_shear]
-	folder_list = ['ventricles_ori', 'ventricles_segment', 'ventricles_shear', 'ventricles_shearseg']
-	for data in data_list:
-		if not os.path.exists(f'/4CAD/data/{data}/{base_folder_name}'):
-			os.makedirs(f'/4CAD/data/{data}/{base_folder_name}')
+	
+	folder_list = [f'{region}_ori', f'{region}_segment', f'{region}_shear', f'{region}_shearseg']
+	for folder in folder_list:
+		if not os.path.exists(f'data/{folder}/{base_folder_name}'):
+			os.makedirs(f'data/{folder}/{base_folder_name}')
+		if not os.path.exists(f'img/{folder}/{base_folder_name}'):
+			os.makedirs(f'img/{folder}/{base_folder_name}')
 
 
 	for subject in subjects_dir:
@@ -72,24 +85,23 @@ def process_subjects_in_folder(folder_name):
 		mri_path = os.path.join(folder_name, subject, 'mri')
 		mri_file = os.path.join(mri_path, 'brain.finalsurfs.mgz')
 		aseg_file = os.path.join(mri_path, 'aseg.mgz')
-
+  
 		mri_data = nib.load(mri_file).get_fdata()
 		aseg_data = nib.load(aseg_file).get_fdata()
-
-		segment, ori = segment_and_extract_middle_slice(mri_data, aseg_data)
+		
+		if region == "hippo":
+			ori, segment = process_hippo(mri_data, aseg_data)
+		elif region == "ven":
+			ori, segment = process_ventricle(mri_data, aseg_data)
+			
 		ori_shear = shear(ori)
 		seg_shear = shear(segment)
-		# Save as jpg
+		data_list = [ori, segment, ori_shear, seg_shear]
 		for data, folder in zip(data_list, folder_list):
 			# Save as .npy
-			output_path = os.path.join(f'/4CAD/data/{folder}/{base_folder_name}', f"{subject}ventricle.npy")
+			output_path = os.path.join(f'data/{folder}/{base_folder_name}', f"{subject}_{region}.npy")
 			np.save(output_path, data)
 
 			# Save as .jpg
-			output_path = os.path.join(f'/4CAD/img/{folder}/{base_folder_name}', f"{subject}ventricle.jpg")
+			output_path = os.path.join(f'img/{folder}/{base_folder_name}', f"{subject}_{region}.jpg")
 			save_as_jpg(output_path, data)
-if __name__ == "__main__":
-
-	for folder in  ["CN", "MCI", "Mild" 'Mod']:
-		process_subjects_in_folder(f'/4CAD/data/ADNI_out_mgz/{folder}')
-
