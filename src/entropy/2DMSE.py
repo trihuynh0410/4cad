@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import cupy as cp
 from entropy import *
-
+import time
 LABELS = {
 	'CN': 0,
 	'MCI': 1,
@@ -86,5 +86,9 @@ if __name__ == "__main__":
 	feature_directory = sys.argv[1]
 	scales = [3, 4]
 	windows = [4]
+	start_time = time.time() 
 	process_directory(feature_directory, scales, windows)
+	end_time = time.time()  
+	total_time = end_time - start_time 
+	print(f"Total run time: {total_time} seconds")
 
