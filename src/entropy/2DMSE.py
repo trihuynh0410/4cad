@@ -38,7 +38,7 @@ def calculate_entropies(data, window):
 
 def process_directory(feature_dir, scales, windows):
 	feature_name = os.path.basename(feature_dir)
-	output_filename = f"data/entropy/Entropy_{feature_name}.csv"
+	output_filename = f"data/entropy1/Entropy_{feature_name}.csv"
 
 	# Load existing results if they exist
 	if os.path.exists(output_filename):
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
 	feature_directory = sys.argv[1]
 	scales = [3, 4]
-	windows = [4]
+	windows = [2, 3, 4]
 	start_time = time.time() 
 	process_directory(feature_directory, scales, windows)
 	end_time = time.time()  
