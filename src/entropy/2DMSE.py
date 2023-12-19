@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
 	feature_directory = sys.argv[1]
 	scales = [3, 4]
-	windows = [2, 3, 4]
+	windows = [3, 4]
 	start_time = time.time() 
 	process_directory(feature_directory, scales, windows)
 	end_time = time.time()  
