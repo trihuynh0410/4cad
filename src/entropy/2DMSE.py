@@ -38,9 +38,8 @@ def calculate_entropies(data, window):
 
 def process_directory(feature_dir, scales, windows):
 	feature_name = os.path.basename(feature_dir)
-	output_filename = f"data/entropy1/Entropy_{feature_name}.csv"
+	output_filename = f"data/entropy/Entropy_{feature_name}.csv"
 
-	# Load existing results if they exist
 	if os.path.exists(output_filename):
 		results_df = pd.read_csv(output_filename)
 	else:
@@ -51,10 +50,6 @@ def process_directory(feature_dir, scales, windows):
 		for subject_file in os.listdir(label_dir):
 			subject_name = os.path.splitext(subject_file)[0].rsplit('_', 1)[0]
 
-			if 'subject' in results_df.columns and subject_name in results_df['subject'].values:
-				print(f'Subject {subject_name} already processed. Skipping...')
-				continue
-
 			data = np.load(os.path.join(label_dir, subject_file))
 			record = {'subject': subject_name, 'label': label_value}
 			for scale in scales:
@@ -62,9 +57,12 @@ def process_directory(feature_dir, scales, windows):
 					column_prefix = f"{feature_name}_Scale{scale}_Window{window}_"
 					entropy_columns = [f"{column_prefix}{entropy}" for entropy in ['SampEn', 'FuzzEn', 'DispEn', 'DistEn', 'PermEn', 'EspEn']]
 					
-					if 'subject' in results_df.columns and all(col in results_df.columns for col in entropy_columns) and subject_name in results_df['subject'].values:
-						print(f'Subject {subject_name}, Scale {scale}, Window {window} already processed. Skipping...')
-						continue
+					if 'subject' in results_df.columns and subject_name in results_df['subject'].values:
+						subject_row = results_df[results_df['subject'] == subject_name]
+						if not subject_row[entropy_columns].isnull().values.any():
+							print(f'Subject {subject_name}, Scale {scale}, Window {window} already processed. Skipping...')
+							continue
+
 					
 					data_coarse = coarse_grain(data, scale)
 					entropies = calculate_entropies(data_coarse, window)
@@ -72,7 +70,7 @@ def process_directory(feature_dir, scales, windows):
 						column_name = f"{column_prefix}{entropy_name}"
 						record[column_name] = entropy_value
 
-			#results_df = results_df.append(record, ignore_index=True)
+			# results_df = results_df._append(record, ignore_index=True)
 			results_df = pd.concat([results_df, pd.DataFrame([record])], ignore_index=True)
 			results_df.to_csv(output_filename, index=False)
 			print('Done subject:', subject_name, 'Label:', label)
